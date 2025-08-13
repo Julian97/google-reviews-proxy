@@ -2,22 +2,13 @@
   "name": "google-reviews-proxy",
   "version": "1.0.0",
   "description": "Serverless proxy for Google Places API reviews",
-  "main": "index.js",
   "scripts": {
-    "dev": "vercel dev",
-    "build": "echo 'No build step required'",
-    "start": "echo 'Use vercel dev for local development'"
+    "dev": "vercel dev"
   },
   "dependencies": {
     "node-fetch": "^2.6.12"
   },
   "engines": {
     "node": ">=18.0.0"
-  },
-  "repository": {
-    "type": "git",
-    "url": "https://github.com/Julian97/google-reviews-proxy.git"
-  },
-  "author": "Julian97",
-  "license": "MIT"
+  }
 }
