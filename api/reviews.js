@@ -1,42 +1,49 @@
-export default async function handler(req, res) {
-  // Add CORS headers immediately
-  res.setHeader('Access-Control-Allow-Credentials', true);
-  res.setHeader('Access-Control-Allow-Origin', '*');
-  res.setHeader('Access-Control-Allow-Methods', 'GET,OPTIONS,PATCH,DELETE,POST,PUT');
-  res.setHeader('Access-Control-Allow-Headers', 'X-CSRF-Token, X-Requested-With, Accept, Accept-Version, Content-Length, Content-MD5, Content-Type, Date, X-Api-Version');
-
-  // Handle preflight requests
-  if (req.method === 'OPTIONS') {
-    res.status(200).end();
-    return;
-  }
-
-  // Only allow GET requests
-  if (req.method !== 'GET') {
-    return res.status(405).json({ 
-      error: 'Method not allowed', 
-      method: req.method,
-      timestamp: new Date().toISOString()
-    });
-  }
-
+// CommonJS export for better Vercel compatibility
+module.exports = async (req, res) => {
+  console.log('=== Function Started ===');
+  console.log('Node version:', process.version);
+  console.log('Request method:', req.method);
+  console.log('Request URL:', req.url);
+  
   try {
-    console.log('=== Reviews API Function Started ===');
-    console.log('Environment check:');
-    console.log('- NODE_ENV:', process.env.NODE_ENV);
-    console.log('- VERCEL_ENV:', process.env.VERCEL_ENV);
-    console.log('- API Key exists:', !!process.env.GOOGLE_PLACES_API_KEY);
-    console.log('- Place ID exists:', !!process.env.GOOGLE_PLACE_ID);
+    // Set CORS headers first
+    res.setHeader('Access-Control-Allow-Credentials', 'true');
+    res.setHeader('Access-Control-Allow-Origin', '*');
+    res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
+    res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With');
+    res.setHeader('Content-Type', 'application/json');
 
-    // Validate environment variables
+    // Handle preflight OPTIONS requests
+    if (req.method === 'OPTIONS') {
+      console.log('Handling OPTIONS preflight request');
+      return res.status(200).end();
+    }
+
+    // Only allow GET requests for the main endpoint
+    if (req.method !== 'GET') {
+      console.log('Method not allowed:', req.method);
+      return res.status(405).json({ 
+        error: 'Method not allowed', 
+        method: req.method,
+        timestamp: new Date().toISOString()
+      });
+    }
+
+    console.log('Checking environment variables...');
+    
+    // Check environment variables
     const apiKey = process.env.GOOGLE_PLACES_API_KEY;
     const placeId = process.env.GOOGLE_PLACE_ID;
+
+    console.log('API Key exists:', !!apiKey);
+    console.log('Place ID exists:', !!placeId);
 
     if (!apiKey) {
       console.error('Missing GOOGLE_PLACES_API_KEY environment variable');
       return res.status(500).json({ 
         error: 'Server configuration error: Missing API key',
-        timestamp: new Date().toISOString()
+        timestamp: new Date().toISOString(),
+        debug: 'GOOGLE_PLACES_API_KEY environment variable is not set'
       });
     }
 
@@ -44,9 +51,12 @@ export default async function handler(req, res) {
       console.error('Missing GOOGLE_PLACE_ID environment variable');
       return res.status(500).json({ 
         error: 'Server configuration error: Missing Place ID',
-        timestamp: new Date().toISOString()
+        timestamp: new Date().toISOString(),
+        debug: 'GOOGLE_PLACE_ID environment variable is not set'
       });
     }
+
+    console.log('Environment variables OK, making API request...');
 
     // Construct the Google Places API URL
     const fieldsParam = 'reviews,rating,user_ratings_total,name';
@@ -54,7 +64,9 @@ export default async function handler(req, res) {
     
     console.log('Making request to Google Places API...');
     console.log('Place ID (first 10 chars):', placeId.substring(0, 10) + '...');
-    console.log('API Key (first 10 chars):', apiKey.substring(0, 10) + '...');
+
+    // Import fetch dynamically to avoid module issues
+    const fetch = (await import('node-fetch')).default;
 
     // Make the request to Google Places API
     const response = await fetch(googleApiUrl, {
@@ -66,7 +78,6 @@ export default async function handler(req, res) {
     });
 
     console.log('Google API Response Status:', response.status);
-    console.log('Google API Response Headers:', Object.fromEntries(response.headers.entries()));
 
     if (!response.ok) {
       const errorText = await response.text();
@@ -132,13 +143,13 @@ export default async function handler(req, res) {
       timestamp: new Date().toISOString()
     };
 
-    console.log('=== Reviews API Function Completed Successfully ===');
+    console.log('=== Function Completed Successfully ===');
 
     // Return successful response
     return res.status(200).json(formattedResponse);
 
   } catch (error) {
-    console.error('=== CRITICAL ERROR in Reviews API ===');
+    console.error('=== CRITICAL ERROR ===');
     console.error('Error name:', error.name);
     console.error('Error message:', error.message);
     console.error('Error stack:', error.stack);
@@ -154,4 +165,4 @@ export default async function handler(req, res) {
       timestamp: new Date().toISOString()
     });
   }
-}
+};
